@@ -1,0 +1,764 @@
+---
+title: "Análise descritiva - TAN"
+author: "Vanessa Melo"
+date: "Março de 2020"
+output: word_document
+---
+
+```{r , include = FALSE}
+setwd('E:\\Artigo TAN\\ANÁLISES 2020') 
+```
+
+```{r , echo = TRUE}
+load('TAN.rda') #Carregando o banco
+```
+
+```{r, include = FALSE}
+library(survey)
+options(survey.lonely.psu='adjust')
+```
+
+#População de estudo
+
+### Sem o efeito do plano amostral
+```{r , echo = F}
+sem.efeito=as.data.frame(svyby(~one_cria,~tan,criancas_des,na.rm=TRUE,unwtd.count))
+row.names(sem.efeito)= c("TAN não utilizada", "TAN utilizada")
+```
+
+```{r , echo = T}
+sem.efeito
+```
+
+### Com o efeito do plano amostral
+```{r , echo = F}
+com.efeito=round(svytotal(~one_cria,criancas_des),0)
+com.efeito=as.data.frame(com.efeito)
+rownames(com.efeito)= c("População")
+colnames(com.efeito)= c("Total", "SE")
+
+uso=round(svyby(~one_cria,~tan,criancas_des,na.rm=TRUE,svytotal),0)
+uso=as.data.frame(uso)
+rownames(uso)= c("TAN não utilizada", "TAN utilizada")
+colnames(uso)= c("TAN","População", "SE")
+
+result=svymean( ~ tan,criancas_des,na.rm = TRUE )
+a=c("Prevalência","Lim.Inf","Lim.Sup") 
+b=round((coef(result))*100,2)
+c=round((confint(result ))*100,2)
+prev=c(b,c)
+prevalencia=as.data.frame(rbind(a,prev))
+rownames(prevalencia) <- c()
+colnames(prevalencia) <- c()
+```
+
+```{r , echo = T}
+com.efeito
+```
+
+#Total da utilização da TAN
+```{r , echo = T}
+uso
+```
+
+#Prevalência de utilização da TAN
+```{r , echo = T}
+prevalencia
+```
+
+#População por Capitais
+```{r , echo = F}
+capsem=svyby(~one_cria,~ capitais,criancas_des,na.rm=TRUE,unwtd.count)
+nclusters=svyby(~one_cria,~capitais,criancas_des,na.rm=TRUE,svytotal)
+ncap=round(coef(nclusters),0)
+ncap=as.data.frame(ncap)
+tcap=as.data.frame(cbind(capsem,ncap))
+rownames(tcap) <- c()
+colnames(tcap) <- c("Capitais", "Sem efeito", "SE", "Com efeito")
+```
+
+```{r , echo = T}
+tcap
+```
+
+#Nível individual
+
+#Fórmula para cálculo do IC exato
+```{r , echo = T}
+svyciby <- 
+  function( formula , by , design , method = 'likelihood' , df = degf( design ) ){
+    
+    # steal a bunch of code from the survey package's source
+    # stored in surveyby.R..
+    byfactors <- model.frame( by , model.frame( design ) , na.action = na.pass )
+    byfactor <- do.call( "interaction" , byfactors )
+    uniquelevels <- sort( unique( byfactor ) )
+    uniques <- match( uniquelevels , byfactor )
+    # note: this may not work for all types..
+    # i only tested it out on your example.
+    
+    # run the svyciprop() function on every unique combo
+    all.cis <-
+      lapply( 
+        uniques , 
+        function( i ){
+          
+          svyciprop( 
+            formula , 
+            design[ byfactor %in% byfactor[i] ] ,
+            method = method ,
+            df = df
+          )
+        }
+      )
+    
+    # transpose the svyciprop confidence intervals
+    t.cis <- t( sapply( all.cis , attr , "ci" ) )
+    
+    # tack on the names
+    dimnames( t.cis )[[1]] <- as.character( sort( unique( byfactor ) ) )
+    
+    # return the results
+    t.cis
+  }
+```
+
+#Idade da mulher/responsável
+```{r , echo = F}
+#Sem o efeito do plano amostral 
+sem.efeito=svyby(~tan,~ idade_mae,subset(criancas_des, tan==1),na.rm=TRUE,unwtd.count) 
+sem.efeito=data.frame(sem.efeito)
+
+#Com o efeito do plano amostral
+com.efeito=round(coef(svyby(~tan,~ idade_mae,criancas_des,svytotal,na.rm = TRUE)),0) 
+com.efeito=data.frame(com.efeito)
+
+#Proporção pontual
+prop=round(coef(svyby(~tan,~ idade_mae,criancas_des,svymean,na.rm = TRUE))*100,2)
+prop=data.frame(prop)
+
+#Proporção da variável com IC 95% (binomial exato)
+ic=round(svyciby( ~tan , ~idade_mae , criancas_des , method = 'logit' , df = Inf )*100,2)
+tabela=as.data.frame(cbind(prop,ic))
+colnames(tabela) <- c("Proporção", "Lim.Inf.", "Lim.Sup.")
+```
+
+###Variável sem o efeito do plano amostral
+```{r , echo = T}
+sem.efeito
+```
+
+###Variável com o efeito do plano amostral
+```{r , echo = T}
+com.efeito
+```
+
+###Proporção com IC 95% (binomial exato)
+```{r , echo = T}
+tabela
+```
+
+#Raça/cor da mulher/responsável
+```{r , echo = F}
+#Sem o efeito do plano amostral 
+sem.efeito=svyby(~tan,~ racacor_mae,subset(criancas_des, tan==1),na.rm=TRUE,unwtd.count) 
+sem.efeito=data.frame(sem.efeito)
+
+#Com o efeito do plano amostral
+com.efeito=round(coef(svyby(~tan,~ racacor_mae,criancas_des,svytotal,na.rm = TRUE)),0) 
+com.efeito=data.frame(com.efeito)
+
+#Proporção pontual
+prop=round(coef(svyby(~tan,~ racacor_mae,criancas_des,svymean,na.rm = TRUE))*100,2)
+prop=data.frame(prop)
+
+#Proporção da variável com IC 95% (binomial exato)
+ic=round(svyciby( ~tan , ~racacor_mae , criancas_des , method = 'logit' , df = Inf )*100,2)
+tabela=as.data.frame(cbind(prop,ic))
+colnames(tabela) <- c("Proporção", "Lim.Inf.", "Lim.Sup.")
+```
+
+###Variável sem o efeito do plano amostral
+```{r , echo = T}
+sem.efeito
+```
+
+###Variável com o efeito do plano amostral
+```{r , echo = T}
+com.efeito
+```
+
+###Proporção com IC 95% (binomial exato)
+```{r , echo = T}
+tabela
+```
+
+#Vive com compalheirx
+```{r , echo = F}
+#Sem o efeito do plano amostral 
+sem.efeito=svyby(~tan,~ compx,subset(criancas_des, tan==1),na.rm=TRUE,unwtd.count) 
+sem.efeito=data.frame(sem.efeito)
+
+#Com o efeito do plano amostral
+com.efeito=round(coef(svyby(~tan,~ compx,criancas_des,svytotal,na.rm = TRUE)),0) 
+com.efeito=data.frame(com.efeito)
+
+#Proporção pontual
+prop=round(coef(svyby(~tan,~ compx,criancas_des,svymean,na.rm = TRUE))*100,2)
+prop=data.frame(prop)
+
+#Proporção da variável com IC 95% (binomial exato)
+ic=round(svyciby( ~tan , ~compx , criancas_des , method = 'logit' , df = Inf )*100,2)
+tabela=as.data.frame(cbind(prop,ic))
+colnames(tabela) <- c("Proporção", "Lim.Inf.", "Lim.Sup.")
+```
+
+###Variável sem o efeito do plano amostral
+```{r , echo = T}
+sem.efeito
+```
+
+###Variável com o efeito do plano amostral
+```{r , echo = T}
+com.efeito
+```
+
+###Proporção com IC 95% (binomial exato)
+```{r , echo = T}
+tabela
+```
+
+#Escolaridade da mulher/responsável
+```{r , echo = F}
+#Sem o efeito do plano amostral 
+sem.efeito=svyby(~tan,~ educ_mae,subset(criancas_des, tan==1),na.rm=TRUE,unwtd.count) 
+sem.efeito=data.frame(sem.efeito)
+
+#Com o efeito do plano amostral
+com.efeito=round(coef(svyby(~tan,~ educ_mae,criancas_des,svytotal,na.rm = TRUE)),0) 
+com.efeito=data.frame(com.efeito)
+
+#Proporção pontual
+prop=round(coef(svyby(~tan,~ educ_mae,criancas_des,svymean,na.rm = TRUE))*100,2)
+prop=data.frame(prop)
+
+#Proporção da variável com IC 95% (binomial exato)
+ic=round(svyciby( ~tan , ~educ_mae , criancas_des , method = 'logit' , df = Inf )*100,2)
+tabela=as.data.frame(cbind(prop,ic))
+colnames(tabela) <- c("Proporção", "Lim.Inf.", "Lim.Sup.")
+```
+
+###Variável sem o efeito do plano amostral
+```{r , echo = T}
+sem.efeito
+```
+
+###Variável com o efeito do plano amostral
+```{r , echo = T}
+com.efeito
+```
+
+###Proporção com IC 95% (binomial exato)
+```{r , echo = T}
+tabela
+```
+
+#Número de partos da mulher/responsável
+```{r , echo = F}
+#Sem o efeito do plano amostral 
+sem.efeito=svyby(~tan,~ partos_mae,subset(criancas_des, tan==1),na.rm=TRUE,unwtd.count) 
+sem.efeito=data.frame(sem.efeito)
+
+#Com o efeito do plano amostral
+com.efeito=round(coef(svyby(~tan,~ partos_mae,criancas_des,svytotal,na.rm = TRUE)),0) 
+com.efeito=data.frame(com.efeito)
+
+#Proporção pontual
+prop=round(coef(svyby(~tan,~ partos_mae,criancas_des,svymean,na.rm = TRUE))*100,2)
+prop=data.frame(prop)
+
+#Proporção da variável com IC 95% (binomial exato)
+ic=round(svyciby( ~tan , ~partos_mae , criancas_des , method = 'logit' , df = Inf )*100,2)
+tabela=as.data.frame(cbind(prop,ic))
+colnames(tabela) <- c("Proporção", "Lim.Inf.", "Lim.Sup.")
+```
+
+###Variável sem o efeito do plano amostral
+```{r , echo = T}
+sem.efeito
+```
+
+###Variável com o efeito do plano amostral
+```{r , echo = T}
+com.efeito
+```
+
+###Proporção com IC 95% (binomial exato)
+```{r , echo = T}
+tabela
+```
+
+#A mulher/responsável relata ter deficiência auditiva
+```{r , echo = F}
+#Sem o efeito do plano amostral 
+sem.efeito=svyby(~tan,~ dauditiva,subset(criancas_des, tan==1),na.rm=TRUE,unwtd.count) 
+sem.efeito=data.frame(sem.efeito)
+
+#Com o efeito do plano amostral
+com.efeito=round(coef(svyby(~tan,~ dauditiva,criancas_des,svytotal,na.rm = TRUE)),0) 
+com.efeito=data.frame(com.efeito)
+
+#Proporção pontual
+prop=round(coef(svyby(~tan,~ dauditiva,criancas_des,svymean,na.rm = TRUE))*100,2)
+prop=data.frame(prop)
+
+#Proporção da variável com IC 95% (binomial exato)
+ic=round(svyciby( ~tan , ~dauditiva , criancas_des , method = 'logit' , df = Inf )*100,2)
+tabela=as.data.frame(cbind(prop,ic))
+colnames(tabela) <- c("Proporção", "Lim.Inf.", "Lim.Sup.")
+```
+
+###Variável sem o efeito do plano amostral
+```{r , echo = T}
+sem.efeito
+```
+
+###Variável com o efeito do plano amostral
+```{r , echo = T}
+com.efeito
+```
+
+###Proporção com IC 95% (binomial exato)
+```{r , echo = T}
+tabela
+```
+
+###Summary de deficiência auditiva
+```{r , echo = T}
+#Considerando o banco todo
+summary(criamae$dauditiva) 
+
+#Considerando apenas quem realizou a TAN (tan==1)
+tansim=subset(criamae, tan==1)
+summary(tansim$dauditiva)
+```
+
+#Realização de atividade remunerada
+```{r , echo = F}
+#Sem o efeito do plano amostral 
+sem.efeito=svyby(~tan,~ atiremu,subset(criancas_des, tan==1),na.rm=TRUE,unwtd.count) 
+sem.efeito=data.frame(sem.efeito)
+
+#Com o efeito do plano amostral
+com.efeito=round(coef(svyby(~tan,~ atiremu,criancas_des,svytotal,na.rm = TRUE)),0) 
+com.efeito=data.frame(com.efeito)
+
+#Proporção pontual
+prop=round(coef(svyby(~tan,~ atiremu,criancas_des,svymean,na.rm = TRUE))*100,2)
+prop=data.frame(prop)
+
+#Proporção da variável com IC 95% (binomial exato)
+ic=round(svyciby( ~tan , ~atiremu , criancas_des , method = 'logit' , df = Inf )*100,2)
+tabela=as.data.frame(cbind(prop,ic))
+colnames(tabela) <- c("Proporção", "Lim.Inf.", "Lim.Sup.")
+```
+
+###Variável sem o efeito do plano amostral
+```{r , echo = T}
+sem.efeito
+```
+
+###Variável com o efeito do plano amostral
+```{r , echo = T}
+com.efeito
+```
+
+###Proporção com IC 95% (binomial exato)
+```{r , echo = T}
+tabela
+```
+
+#Cadastro na Estratégia Saúde da Família
+```{r , echo = F}
+#Sem o efeito do plano amostral 
+sem.efeito=svyby(~tan,~ esf,subset(criancas_des, tan==1),na.rm=TRUE,unwtd.count) 
+sem.efeito=data.frame(sem.efeito)
+
+#Com o efeito do plano amostral
+com.efeito=round(coef(svyby(~tan,~ esf,criancas_des,svytotal,na.rm = TRUE)),0) 
+com.efeito=data.frame(com.efeito)
+
+#Proporção pontual
+prop=round(coef(svyby(~tan,~ esf,criancas_des,svymean,na.rm = TRUE))*100,2)
+prop=data.frame(prop)
+
+#Proporção da variável com IC 95% (binomial exato)
+ic=round(svyciby( ~tan , ~esf , criancas_des , method = 'logit' , df = Inf )*100,2)
+tabela=as.data.frame(cbind(prop,ic))
+colnames(tabela) <- c("Proporção", "Lim.Inf.", "Lim.Sup.")
+```
+
+###Variável sem o efeito do plano amostral
+```{r , echo = T}
+sem.efeito
+```
+
+###Variável com o efeito do plano amostral
+```{r , echo = T}
+com.efeito
+```
+
+###Proporção com IC 95% (binomial exato)
+```{r , echo = T}
+tabela
+```
+
+#Posse de plano de saúde
+```{r , echo = F}
+#Sem o efeito do plano amostral 
+sem.efeito=svyby(~tan,~ plano,subset(criancas_des, tan==1),na.rm=TRUE,unwtd.count) 
+sem.efeito=data.frame(sem.efeito)
+
+#Com o efeito do plano amostral
+com.efeito=round(coef(svyby(~tan,~ plano,criancas_des,svytotal,na.rm = TRUE)),0) 
+com.efeito=data.frame(com.efeito)
+
+#Proporção pontual
+prop=round(coef(svyby(~tan,~ plano,criancas_des,svymean,na.rm = TRUE))*100,2)
+prop=data.frame(prop)
+
+#Proporção da variável com IC 95% (binomial exato)
+ic=round(svyciby( ~tan , ~plano , criancas_des , method = 'logit' , df = Inf )*100,2)
+tabela=as.data.frame(cbind(prop,ic))
+colnames(tabela) <- c("Proporção", "Lim.Inf.", "Lim.Sup.")
+```
+
+###Variável sem o efeito do plano amostral
+```{r , echo = T}
+sem.efeito
+```
+
+###Variável com o efeito do plano amostral
+```{r , echo = T}
+com.efeito
+```
+
+###Proporção com IC 95% (binomial exato)
+```{r , echo = T}
+tabela
+```
+
+#Local do pré-natal
+```{r , echo = F}
+#Sem o efeito do plano amostral 
+sem.efeito=svyby(~tan,~ locpre,subset(criancas_des, tan==1),na.rm=TRUE,unwtd.count) 
+sem.efeito=data.frame(sem.efeito)
+
+#Com o efeito do plano amostral
+com.efeito=round(coef(svyby(~tan,~ locpre,criancas_des,svytotal,na.rm = TRUE)),0) 
+com.efeito=data.frame(com.efeito)
+
+#Proporção pontual
+prop=round(coef(svyby(~tan,~ locpre,criancas_des,svymean,na.rm = TRUE))*100,2)
+prop=data.frame(prop)
+
+#Proporção da variável com IC 95% (binomial exato)
+ic=round(svyciby( ~tan , ~locpre , criancas_des , method = 'logit' , df = Inf )*100,2)
+tabela=as.data.frame(cbind(prop,ic))
+colnames(tabela) <- c("Proporção", "Lim.Inf.", "Lim.Sup.")
+```
+
+###Variável sem o efeito do plano amostral
+```{r , echo = T}
+sem.efeito
+```
+
+###Variável com o efeito do plano amostral
+```{r , echo = T}
+com.efeito
+```
+
+###Proporção com IC 95% (binomial exato)
+```{r , echo = T}
+tabela
+```
+
+#Localização do parto
+```{r , echo = F}
+#Sem o efeito do plano amostral 
+sem.efeito=svyby(~tan,~ locparto,subset(criancas_des, tan==1),na.rm=TRUE,unwtd.count) 
+sem.efeito=data.frame(sem.efeito)
+
+#Com o efeito do plano amostral
+com.efeito=round(coef(svyby(~tan,~ locparto,criancas_des,svytotal,na.rm = TRUE)),0) 
+com.efeito=data.frame(com.efeito)
+
+#Proporção pontual
+prop=round(coef(svyby(~tan,~ locparto,criancas_des,svymean,na.rm = TRUE))*100,2)
+prop=data.frame(prop)
+
+#Proporção da variável com IC 95% (binomial exato)
+ic=round(svyciby( ~tan , ~locparto , criancas_des , method = 'logit' , df = Inf )*100,2)
+tabela=as.data.frame(cbind(prop,ic))
+colnames(tabela) <- c("Proporção", "Lim.Inf.", "Lim.Sup.")
+```
+
+###Variável sem o efeito do plano amostral
+```{r , echo = T}
+sem.efeito
+```
+
+###Variável com o efeito do plano amostral
+```{r , echo = T}
+com.efeito
+```
+
+###Proporção com IC 95% (binomial exato)
+```{r , echo = T}
+tabela
+```
+
+#Número de consultas de pré-natal
+```{r , echo = F}
+#Sem o efeito do plano amostral 
+sem.efeito=svyby(~tan,~ consultas7,subset(criancas_des, tan==1),na.rm=TRUE,unwtd.count) 
+sem.efeito=data.frame(sem.efeito)
+
+#Com o efeito do plano amostral
+com.efeito=round(coef(svyby(~tan,~ consultas7,criancas_des,svytotal,na.rm = TRUE)),0) 
+com.efeito=data.frame(com.efeito)
+
+#Proporção pontual
+prop=round(coef(svyby(~tan,~ consultas7,criancas_des,svymean,na.rm = TRUE))*100,2)
+prop=data.frame(prop)
+
+#Proporção da variável com IC 95% (binomial exato)
+ic=round(svyciby( ~tan , ~consultas7 , criancas_des , method = 'logit' , df = Inf )*100,2)
+tabela=as.data.frame(cbind(prop,ic))
+colnames(tabela) <- c("Proporção", "Lim.Inf.", "Lim.Sup.")
+```
+
+###Variável sem o efeito do plano amostral
+```{r , echo = T}
+sem.efeito
+```
+
+###Variável com o efeito do plano amostral
+```{r , echo = T}
+com.efeito
+```
+
+###Proporção com IC 95% (binomial exato)
+```{r , echo = T}
+tabela
+```
+
+#Orientação sobre sinais de risco na gravidez
+```{r , echo = F}
+#Sem o efeito do plano amostral 
+sem.efeito=svyby(~tan,~ risco,subset(criancas_des, tan==1),na.rm=TRUE,unwtd.count) 
+sem.efeito=data.frame(sem.efeito)
+
+#Com o efeito do plano amostral
+com.efeito=round(coef(svyby(~tan,~ risco,criancas_des,svytotal,na.rm = TRUE)),0) 
+com.efeito=data.frame(com.efeito)
+
+#Proporção pontual
+prop=round(coef(svyby(~tan,~ risco,criancas_des,svymean,na.rm = TRUE))*100,2)
+prop=data.frame(prop)
+
+#Proporção da variável com IC 95% (binomial exato)
+ic=round(svyciby( ~tan , ~risco , criancas_des , method = 'logit' , df = Inf )*100,2)
+tabela=as.data.frame(cbind(prop,ic))
+colnames(tabela) <- c("Proporção", "Lim.Inf.", "Lim.Sup.")
+```
+
+###Variável sem o efeito do plano amostral
+```{r , echo = T}
+sem.efeito
+```
+
+###Variável com o efeito do plano amostral
+```{r , echo = T}
+com.efeito
+```
+
+###Proporção com IC 95% (binomial exato)
+```{r , echo = T}
+tabela
+```
+
+#Realização de exame de sangue para sífilis
+```{r , echo = F}
+#Sem o efeito do plano amostral 
+sem.efeito=svyby(~tan,~ sifilis,subset(criancas_des, tan==1),na.rm=TRUE,unwtd.count) 
+sem.efeito=data.frame(sem.efeito)
+
+#Com o efeito do plano amostral
+com.efeito=round(coef(svyby(~tan,~ sifilis,criancas_des,svytotal,na.rm = TRUE)),0) 
+com.efeito=data.frame(com.efeito)
+
+#Proporção pontual
+prop=round(coef(svyby(~tan,~ sifilis,criancas_des,svymean,na.rm = TRUE))*100,2)
+prop=data.frame(prop)
+
+#Proporção da variável com IC 95% (binomial exato)
+ic=round(svyciby( ~tan , ~sifilis , criancas_des , method = 'logit' , df = Inf )*100,2)
+tabela=as.data.frame(cbind(prop,ic))
+colnames(tabela) <- c("Proporção", "Lim.Inf.", "Lim.Sup.")
+```
+
+###Variável sem o efeito do plano amostral
+```{r , echo = T}
+sem.efeito
+```
+
+###Variável com o efeito do plano amostral
+```{r , echo = T}
+com.efeito
+```
+
+###Proporção com IC 95% (binomial exato)
+```{r , echo = T}
+tabela
+```
+
+#Foi pedido teste de sífilis para "parceiro"
+```{r , echo = F}
+#Sem o efeito do plano amostral 
+sem.efeito=svyby(~tan,~ sifparx,subset(criancas_des, tan==1),na.rm=TRUE,unwtd.count) 
+sem.efeito=data.frame(sem.efeito)
+
+#Com o efeito do plano amostral
+com.efeito=round(coef(svyby(~tan,~ sifparx,criancas_des,svytotal,na.rm = TRUE)),0) 
+com.efeito=data.frame(com.efeito)
+
+#Proporção pontual
+prop=round(coef(svyby(~tan,~ sifparx,criancas_des,svymean,na.rm = TRUE))*100,2)
+prop=data.frame(prop)
+
+#Proporção da variável com IC 95% (binomial exato)
+ic=round(svyciby( ~tan , ~sifparx , criancas_des , method = 'logit' , df = Inf )*100,2)
+tabela=as.data.frame(cbind(prop,ic))
+colnames(tabela) <- c("Proporção", "Lim.Inf.", "Lim.Sup.")
+```
+
+###Variável sem o efeito do plano amostral
+```{r , echo = T}
+sem.efeito
+```
+
+###Variável com o efeito do plano amostral
+```{r , echo = T}
+com.efeito
+```
+
+###Proporção com IC 95% (binomial exato)
+```{r , echo = T}
+tabela
+```
+
+###Summary de teste de sífilis para "parceiro"
+```{r , echo = T}
+#Considerando o banco todo
+summary(criamae$sifparx) 
+
+#Considerando apenas quem realizou a TAN (tan==1)
+summary(tansim$sifparx)
+```
+
+#Não resposta de teste de sífilis em "parceiro"
+```{r, echo = F}
+#Estratégia para cálculo da proporção de NA em sifpar
+
+#teste=as.numeric(criamae[,"s031_mae"])
+#criamae$teste=teste
+#criancas_des$variables <- cbind(teste,criancas_des$variables)
+#teste2=as.data.frame(teste)
+
+#library( MASS)
+#write.csv(teste2, file="sifilispar.csv2")
+
+sifpar=read.csv2("sp.csv", header=TRUE, sep=";")
+colnames(sifpar)=c("teste","par")
+par=as.numeric(sifpar[,"par"])
+
+criamae$parteste=par
+criancas_des$variables <- cbind(par,criancas_des$variables)
+```
+
+```{r, echo = T}
+#Criação de nova variável: "par", que representa um espelho da variável sifparx, onde:
+#1= não; 2= sim; #3= não resposta.
+```
+
+
+```{r, echo = F}
+#Sem o efeito do plano amostral
+sem.efeito=svyby(~tan,~ par,subset(criancas_des, tan==1),na.rm=TRUE,unwtd.count) 
+sem.efeito=data.frame(sem.efeito)
+
+#Com o efeito do plano amostral
+com.efeito=round(coef(svyby(~tan,~ par,criancas_des,svytotal,na.rm = TRUE)),0) 
+com.efeito=data.frame(com.efeito)
+
+#Proporção pontual
+prop=round(coef(svyby(~tan,~ par,criancas_des,svymean,na.rm = TRUE))*100,2)
+prop=data.frame(prop)
+
+#Proporção da variável com IC 95% (binomial exato)
+ic=round(svyciby( ~tan , ~par , criancas_des , method = 'logit' , df = Inf )*100,2)
+tabela=as.data.frame(cbind(prop,ic))
+colnames(tabela) <- c("Proporção", "Lim.Inf.", "Lim.Sup.")
+```
+
+###Variável sem o efeito do plano amostral
+```{r, echo = T}
+sem.efeito
+```
+
+###Variável com o efeito do plano amostral
+```{r, echo = T}
+com.efeito
+```
+
+###Proporção com IC 95% (binomial exato)
+```{r, echo = T}
+tabela
+```
+
+#Foi solicitado o teste para HIV
+```{r , echo = F}
+#Sem o efeito do plano amostral 
+sem.efeito=svyby(~tan,~ hiv,subset(criancas_des, tan==1),na.rm=TRUE,unwtd.count) 
+sem.efeito=data.frame(sem.efeito)
+
+#Com o efeito do plano amostral
+com.efeito=round(coef(svyby(~tan,~ hiv,criancas_des,svytotal,na.rm = TRUE)),0) 
+com.efeito=data.frame(com.efeito)
+
+#Proporção pontual
+prop=round(coef(svyby(~tan,~ hiv,criancas_des,svymean,na.rm = TRUE))*100,2)
+prop=data.frame(prop)
+
+#Proporção da variável com IC 95% (binomial exato)
+ic=round(svyciby( ~tan , ~hiv , criancas_des , method = 'logit' , df = Inf )*100,2)
+tabela=as.data.frame(cbind(prop,ic))
+colnames(tabela) <- c("Proporção", "Lim.Inf.", "Lim.Sup.")
+```
+
+###Variável sem o efeito do plano amostral
+```{r , echo = T}
+sem.efeito
+```
+
+###Variável com o efeito do plano amostral
+```{r , echo = T}
+com.efeito
+```
+
+###Proporção com IC 95% (binomial exato)
+```{r , echo = T}
+tabela
+```
+
