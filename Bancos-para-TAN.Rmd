@@ -1,7 +1,5 @@
 ---
 title: "Bancos para TAN"
-author: "Vanessa Melo"
-date: "Março 2020"
 output: word_document
 ---
 #Carregando os questionários originais da PNS-2013
