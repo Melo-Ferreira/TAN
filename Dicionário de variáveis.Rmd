@@ -1,7 +1,5 @@
 ---
 title: "Dicionário de Variáveis"
-author: "Vanessa Melo"
-date: "Março de 2020"
 output: word_document
 ---
 
