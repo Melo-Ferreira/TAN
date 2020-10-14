@@ -1,7 +1,5 @@
 ---
 title: "Modelagem TAN"
-author: "Vanessa Melo"
-date: "Março de 2020"
 output: word_document
 ---
 
