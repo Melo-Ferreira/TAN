@@ -8,6 +8,8 @@ setwd('E:\\Artigo TAN\\ANÁLISES 2020')
 ```
 
 ```{r , echo = TRUE}
+#Os bancos de dados '2013 all questionnaire survey design.rda' e '2013 long questionnaire survey design.rda' são provenientes do script “download and import.R” disponíveis em: https://github.com/ajdamico/asdfree/tree/archive/Pesquisa%20Nacional%20De%20Saude
+
 load('2013 all questionnaire survey design.rda')
 load('2013 long questionnaire survey design.rda')
 ```
@@ -352,42 +354,3 @@ criancas_des=svydesign(ids=~upa_pns,strata=~v0024,data=criamae,weights=~pre_pes_
 ```{r , echo = TRUE}
 save( criancas_des, criamae , file = "TAN.rda" )  
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
